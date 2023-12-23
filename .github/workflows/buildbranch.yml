@@ -1,0 +1,93 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+
+  workflow_dispatch:
+    inputs:
+      base_branch:
+        description: 'Name of branch to base build on'
+        type: string
+        required: false
+        default: 'master'
+      build_branch:
+        description: 'Name of branch to commit build to'
+        type: string
+        required: false
+        default: 'build'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the base branch of this repository with full depth
+    - name: Checkout this repository
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets['GITHUB_TOKEN'] }}
+        ref: ${{ inputs.base_branch || 'master' }}
+        fetch-depth: 0
+
+    # Set the local git user config to use the GitHub Actions bot account
+    - name: Set local git config user details
+      run: |
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+
+    # Recheckout both the base and build branches and merge the base into build
+    # This can "fail" if the build branch doesn't exist, but we should continue anyway
+    - name: (Re)checkout both branches and merge main into build
+      continue-on-error: true
+      run: |
+        git checkout ${{ inputs.base_branch || 'master' }}
+        git checkout ${{ inputs.build_branch || 'build' }}
+        git merge ${{ inputs.base_branch || 'master' }}
+
+    # Setup some Node stuff
+    - name: Node.js setup
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    # Set NPM cache options
+    - name: Set NPM cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
+
+    # Update NPM to the latest version
+    - name: Update NPM installation
+      run: npm install -g npm@latest
+
+    # Install NPM dependencies
+    - name: Install NPM dependencies
+      run: npm ci
+
+    # Actually build everything
+    - name: Build
+      run: |
+        npm run clean
+        npm run build:ci
+
+    # Commit newly built files
+    # This can "fail" if there are no newly changed/built files, but we should continue anyway
+    - name: Commit built files
+      id: commit
+      continue-on-error: true
+      run: |
+        git add -f dashboard || true
+        git add -f extension || true
+        git add -f graphics || true
+        git commit -m "Built files" -a
+
+    # Pushes the built files to a specific branch
+    - name: Push built files to build branch
+      uses: ad-m/github-push-action@master
+      with:
+        github_token: ${{ secrets['GITHUB_TOKEN'] }}
+        branch: ${{ inputs.build_branch || 'build' }}
