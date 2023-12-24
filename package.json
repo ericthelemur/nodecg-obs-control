@@ -1,5 +1,5 @@
 {
-  "name": "nodecg-ticker-control",
+  "name": "nodecg-obs-control",
   "version": "1.0.0",
   "description": "",
   "homepage": "",
@@ -23,7 +23,7 @@
       {
         "name": "obs-control",
         "title": "OBS Control",
-        "fullbleed": true,
+        "width": 3,
         "file": "obscontrol.dashboard.html",
         "headerColor": "#525F78"
       }
@@ -55,6 +55,9 @@
     "clean": "trash .parcel-cache dashboard extension graphics"
   },
   "dependencies": {
+    "@types/clone": "^2.1.4",
+    "clone": "^2.1.2",
+    "obs-websocket-js": "^5.0.3",
     "react": "^18.0.0",
     "react-bootstrap": "^2.9.1",
     "react-bootstrap-icons": "^1.10.3",
