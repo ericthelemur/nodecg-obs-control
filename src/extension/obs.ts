@@ -74,6 +74,15 @@ export class OBSUtility extends OBSWebSocket {
         this.log = log;
         this.hooks = opts.hooks || {};
 
+        websocketConfig.once('change', newVal => {
+            // If we were connected last time, try connecting again now.
+            if (newVal.status === 'connected' || newVal.status === 'connecting') {
+                websocketConfig.value.status = 'connecting';
+                this._connectToOBS().then().catch(() => {
+                    websocketConfig.value.status = 'error';
+                });
+            }
+        });
 
         listenTo("connect", (params, ack) => {
             this._ignoreConnectionClosedEvents = false;
