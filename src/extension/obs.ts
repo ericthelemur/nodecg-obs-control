@@ -1,9 +1,9 @@
-import { Configschema, PreviewScene, ProgramScene, SceneList, StudioMode, Transitioning, Websocket, Namespaces } from "types/schemas";
-import { Replicant, getNodeCG } from "./utils";
+import { Configschema, PreviewScene, ProgramScene, SceneList, StudioMode, Transitioning, Websocket, Namespaces, ObsSource } from "types/schemas";
+import { Replicant } from "./utils";
 import OBSWebSocket, { OBSResponseTypes, OBSEventTypes } from 'obs-websocket-js';
 import NodeCG from "@nodecg/types";
 
-const nodecg = getNodeCG();
+import { listenTo } from "../common/listeners";
 
 interface TransitionOptions {
     'with-transition': {
@@ -48,7 +48,7 @@ export class OBSUtility extends OBSWebSocket {
 
         usedNamespaces.add(namespace);
         this.namespace = namespace;
-        const namespacesReplicant = Replicant<Namespaces>('_obs:namespaces', { persistent: false });
+        const namespacesReplicant = Replicant<Namespaces>('namespaces', { persistent: false });
         namespacesReplicant.value.push(namespace);
 
         const websocketConfig = Replicant<Websocket>(`${namespace}:websocket`);
@@ -73,4 +73,78 @@ export class OBSUtility extends OBSWebSocket {
         };
         this.log = log;
         this.hooks = opts.hooks || {};
+
+
+        listenTo("connect", (params, ack) => {
+            this._ignoreConnectionClosedEvents = false;
+            clearInterval(this._reconnectInterval!);
+            this._reconnectInterval = null;
+
+            websocketConfig.value = { ...websocketConfig.value, ...params };
+
+            this._connectToOBS().then(() => {
+                if (ack && !ack.handled) ack();
+            }).catch(err => {
+                websocketConfig.value.status = 'error';
+                log.error('Failed to connect:', err);
+
+                if (ack && !ack.handled) ack(err);
+            });
+        }, namespace);
     }
+
+    private _connectToOBS() {
+        const websocketConfig = this.replicants.websocket;
+        if (websocketConfig.value.status === 'connected') {
+            throw new Error('Attempted to connect to OBS while already connected!');
+        }
+
+        websocketConfig.value.status = 'connecting';
+
+        return this.connect(websocketConfig.value.ip, websocketConfig.value.password).then(() => {
+            this.log.info('Connected');
+            clearInterval(this._reconnectInterval!);
+            this._reconnectInterval = null;
+            websocketConfig.value.status = 'connected';
+            this.call("SetStudioModeEnabled", { studioModeEnabled: true });
+            return this._fullUpdate();
+        });
+    }
+
+    private _fullUpdate() {
+        return Promise.all([
+            this._updateScenes(),
+            this._updateStudioMode()
+        ]);
+    }
+
+    private _updateScenes() {
+        return this.call('GetSceneList').then(res => {
+            this.log.info("Calling gsl", res);
+            this.replicants.sceneList.value = res.scenes.map(scene => scene.name as string);
+
+            const pre = res.currentPreviewSceneName;
+            this.replicants.previewScene.value = {
+                name: pre,
+                sources: res.scenes.find(s => s.name === pre) as unknown as ObsSource[]
+            }
+
+            const pro = res.currentProgramSceneName;
+            this.replicants.programScene.value = {
+                name: pro,
+                sources: res.scenes.find(s => s.name === pro) as unknown as ObsSource[]
+            }
+            return res;
+        }).catch(err => {
+            this.log.error('Error updating scenes:', err);
+        });
+    }
+
+    private _updateStudioMode() {
+        return this.call('GetStudioModeEnabled').then(res => {
+            this.replicants.studioMode.value = res.studioModeEnabled;
+        }).catch(err => {
+            this.log.error('Error getting studio mode status:', err);
+        });
+    }
+}
