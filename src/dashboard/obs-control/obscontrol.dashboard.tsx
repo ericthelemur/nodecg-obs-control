@@ -12,7 +12,7 @@ import { Websocket } from "../../types/schemas/websocket";
 import { sendTo } from "../../common/listeners";
 
 export function MsgControlPanel() {
-	const [websocketRep,] = useReplicant<Websocket>("obs:websocket", { ip: "ws://localhost:4455", password: "", status: "disconnected" })
+	const [websocketRep,] = useReplicant<Websocket>("websocket", { ip: "ws://localhost:4455", password: "", status: "disconnected" })
 
 	const urlElem = useRef<HTMLInputElement>(null);
 	const pwElem = useRef<HTMLInputElement>(null);
@@ -22,7 +22,7 @@ export function MsgControlPanel() {
 		(sendTo("connect", {
 			ip: urlElem.current!.value,
 			password: pwElem.current!.value
-		}, "obs") as unknown as Promise<void>
+		}) as unknown as Promise<void>
 		).then(() => nodecg.log.info('successfully connected to obs'))
 			.catch((err: any) => nodecg.log.error('failed to connect to obs:', err));
 	}

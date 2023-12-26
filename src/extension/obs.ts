@@ -1,9 +1,20 @@
 import { Configschema, PreviewScene, ProgramScene, SceneList, StudioMode, Transitioning, Websocket, Namespaces, ObsSource } from "types/schemas";
-import { Replicant } from "./utils";
-import OBSWebSocket, { OBSResponseTypes, OBSEventTypes } from 'obs-websocket-js';
+import { Replicant, prefixName } from "./utils";
+import OBSWebSocket from 'obs-websocket-js';
 import NodeCG from "@nodecg/types";
+import * as path from "path";
 
 import { listenTo } from "../common/listeners";
+
+
+function buildSchemaPath(schemaName: string) {
+    return path.resolve(__dirname, '../schemas', `${encodeURIComponent(schemaName)}.json`);
+}
+
+export function NamespaceReplicant<T>(namespace: string | undefined, name: string, args: NodeCG.Replicant.OptionsNoDefault = {}) {
+    return Replicant<T>(prefixName(namespace, name), { schemaPath: buildSchemaPath(name), ...args });
+}
+
 
 interface TransitionOptions {
     'with-transition': {
@@ -34,13 +45,10 @@ export class OBSUtility extends OBSWebSocket {
 
     private _ignoreConnectionClosedEvents = false;
     private _reconnectInterval: NodeJS.Timeout | null = null;
-    private _connected: boolean;
-
 
     constructor(nodecg: NodeCG.ServerAPI<Configschema>, opts: { namespace?: string; hooks?: Partial<Hooks> } = {}) {
         super();
-        let namespace = opts.namespace || 'obs';
-        this._connected = false;
+        let namespace = opts.namespace || '';
 
         if (usedNamespaces.has(namespace)) {
             throw new Error(`Namespace "${namespace}" has already been used. Please choose a different namespace.`);
@@ -51,13 +59,13 @@ export class OBSUtility extends OBSWebSocket {
         const namespacesReplicant = Replicant<Namespaces>('namespaces', { persistent: false });
         namespacesReplicant.value.push(namespace);
 
-        const websocketConfig = Replicant<Websocket>(`${namespace}:websocket`);
-        const programScene = Replicant<ProgramScene>(`${namespace}:programScene`);
-        const previewScene = Replicant<PreviewScene>(`${namespace}:previewScene`);
-        const sceneList = Replicant<SceneList>(`${namespace}:sceneList`);
-        const transitioning = Replicant<Transitioning>(`${namespace}:transitioning`);
-        const studioMode = Replicant<StudioMode>(`${namespace}:studioMode`);
-        const log = new nodecg.Logger(`${nodecg.bundleName}:${namespace}`);
+        const websocketConfig = NamespaceReplicant<Websocket>(namespace, "websocket");
+        const programScene = NamespaceReplicant<ProgramScene>(namespace, "programScene");
+        const previewScene = NamespaceReplicant<PreviewScene>(namespace, "previewScene");
+        const sceneList = NamespaceReplicant<SceneList>(namespace, "sceneList");
+        const transitioning = NamespaceReplicant<Transitioning>(namespace, "transitioning");
+        const studioMode = NamespaceReplicant<StudioMode>(namespace, "studioMode");
+        const log = new nodecg.Logger(prefixName(nodecg.bundleName, namespace));
 
         // Expose convenient references to the Replicants.
         // This isn't strictly necessary. The same effect could be achieved by just

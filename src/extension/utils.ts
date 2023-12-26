@@ -11,6 +11,11 @@ export function getNodeCG(): NodeCG.ServerAPI<Configschema> {
     return nodecg;
 }
 
+
+export function prefixName(prefix: string | undefined, name: string) {
+    return prefix ? `${prefix}:${name}` : name;
+}
+
 export function Replicant<T>(name: string, args: NodeCG.Replicant.OptionsNoDefault = {}) {
     return nodecg.Replicant<T>(name, args) as unknown as NodeCG.ServerReplicantWithSchemaDefault<T>;
 }
