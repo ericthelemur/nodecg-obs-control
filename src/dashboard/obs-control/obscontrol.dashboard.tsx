@@ -10,9 +10,13 @@ import FloatingLabel from 'react-bootstrap/FloatingLabel';
 import { useReplicant } from "use-nodecg";
 import { Websocket } from "../../types/schemas/websocket";
 import { sendTo } from "../../common/listeners";
+import { PreviewScene, ProgramScene, SceneList } from 'types/schemas';
 
 export function MsgControlPanel() {
-	const [websocketRep,] = useReplicant<Websocket>("websocket", { ip: "ws://localhost:4455", password: "", status: "disconnected" })
+	const [websocketRep,] = useReplicant<Websocket>("websocket", { ip: "ws://localhost:4455", password: "", status: "disconnected" });
+	const [sceneListRep,] = useReplicant<SceneList>("sceneList", []);
+	const [previewSceneRep,] = useReplicant<PreviewScene>("previewScene", null);
+	const [programSceneRep,] = useReplicant<ProgramScene>("programScene", null);
 
 	const urlElem = useRef<HTMLInputElement>(null);
 	const pwElem = useRef<HTMLInputElement>(null);
@@ -36,6 +40,11 @@ export function MsgControlPanel() {
 			</FloatingLabel>
 			<Form.Text>Status: {websocketRep?.status}</Form.Text>
 			<Button type="submit">Connect</Button>
+
+			<Form.Text>{JSON.stringify(sceneListRep)}</Form.Text>
+			<Form.Text>{JSON.stringify(previewSceneRep?.name)}</Form.Text>
+			<Form.Text>{JSON.stringify(programSceneRep?.name)}</Form.Text>
+			<Form.Text>{JSON.stringify(programSceneRep?.sources)}</Form.Text>
 		</Form>
 	);
 }

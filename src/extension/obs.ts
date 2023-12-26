@@ -108,6 +108,27 @@ export class OBSUtility extends OBSWebSocket {
                 if (ack && !ack.handled) ack(err);
             });
         }, namespace);
+
+        listenTo("disconnect", (_, ack) => {
+            this._ignoreConnectionClosedEvents = true;
+            clearInterval(this._reconnectInterval!);
+            this._reconnectInterval = null;
+            websocketConfig.value.status = 'disconnected';
+            this.disconnect();
+            log.info('Operator-requested disconnect.');
+
+            if (ack && !ack.handled) ack();
+        }, namespace);
+
+        this.on("ConnectionClosed", this._reconnectToOBS);
+        (this as any).on("error", (e: Error) => {
+            log.error(e);
+            this._reconnectToOBS();
+        });
+
+        this.on("SceneListChanged", this._updateScenes);
+        this.on("CurrentPreviewSceneChanged", (name) => this._updateSceneItems(this.replicants.previewScene, name.sceneName));
+        this.on("CurrentProgramSceneChanged", (name) => this._updateSceneItems(this.replicants.programScene, name.sceneName));
     }
 
     private _connectToOBS() {
@@ -130,7 +151,12 @@ export class OBSUtility extends OBSWebSocket {
 
     private _fullUpdate() {
         return Promise.all([
-            this._updateScenes(),
+            this._updateScenes().then(
+                (res) => Promise.all([
+                    this._updateSceneItems(this.replicants.previewScene, res.currentPreviewSceneName),
+                    this._updateSceneItems(this.replicants.programScene, res.currentProgramSceneName)
+                ])
+            ).catch(err => this.log.error('Error updating scenes list:', err)),
             this._updateStudioMode()
         ]);
     }
@@ -139,12 +165,8 @@ export class OBSUtility extends OBSWebSocket {
         return this.call('GetSceneList').then(res => {
             this.log.info("Calling gsl", res);
             this.replicants.sceneList.value = res.scenes.map(s => s.sceneName as string);
-
-            return Promise.all([
-                this._updateSceneItems(this.replicants.previewScene, res.currentPreviewSceneName),
-                this._updateSceneItems(this.replicants.programScene, res.currentProgramSceneName),
-            ])
-        }).catch(err => this.log.error('Error updating scenes:', err));
+            return res;
+        })
     }
 
     private _updateStudioMode() {
@@ -164,5 +186,22 @@ export class OBSUtility extends OBSWebSocket {
             this.log.info(replicant.name, replicant.value);
             return items;
         }).catch(err => this.log.error(`Error updating ${replicant.name} scene:`, err));
+    }
+
+
+    private _reconnectToOBS() {
+        if (this._reconnectInterval) return;
+
+        const websocketConfig = this.replicants.websocket;
+        if (this._ignoreConnectionClosedEvents) {
+            websocketConfig.value.status = 'disconnected';
+            return;
+        }
+
+        websocketConfig.value.status = 'connecting';
+        this.log.warn('Connection closed, will attempt to reconnect every 5 seconds.');
+        this._reconnectInterval = setInterval(() => {
+            this._connectToOBS().catch(() => { });
+        }, 5000);
     }
 }
