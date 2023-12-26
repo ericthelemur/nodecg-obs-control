@@ -130,6 +130,15 @@ export class OBSUtility extends OBSWebSocket {
             this.log.error(e);
             this._reconnectToOBS();
         });
+
+        setInterval(() => {
+            if (this.replicants.websocket.value?.status === 'connected' && this.socket?.readyState !== this.socket?.OPEN) {
+                this.log.warn('Thought we were connected, but the automatic poll detected we were not. Correcting.');
+                clearInterval(this._reconnectInterval!);
+                this._reconnectInterval = null;
+                this._reconnectToOBS();
+            }
+        }, 1000);
     }
 
 
@@ -168,9 +177,10 @@ export class OBSUtility extends OBSWebSocket {
 
 
     private _replicantListeners() {
-        this.on("SceneListChanged", (res) => this._updateSceneList(res.scenes as { sceneName: string }[]));
+        this.on("SceneListChanged", ({ scenes }) => this._updateSceneList(scenes as { sceneName: string }[]));
         this.on("CurrentPreviewSceneChanged", (name) => this._updateSceneItems(this.replicants.previewScene, name.sceneName));
         this.on("CurrentProgramSceneChanged", (name) => this._updateSceneItems(this.replicants.programScene, name.sceneName));
+        this.on("StudioModeStateChanged", ({ studioModeEnabled }) => this.replicants.studioMode.value = studioModeEnabled);
     }
 
     private _fullUpdate() {
