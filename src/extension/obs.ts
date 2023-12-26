@@ -84,7 +84,7 @@ export class OBSUtility extends OBSWebSocket {
 
         websocketConfig.once('change', newVal => {
             // If we were connected last time, try connecting again now.
-            if (newVal.status === 'connected' || newVal.status === 'connecting') {
+            if (newVal && (newVal.status === 'connected' || newVal.status === 'connecting')) {
                 websocketConfig.value.status = 'connecting';
                 this._connectToOBS().then().catch(() => {
                     websocketConfig.value.status = 'error';
@@ -138,23 +138,13 @@ export class OBSUtility extends OBSWebSocket {
     private _updateScenes() {
         return this.call('GetSceneList').then(res => {
             this.log.info("Calling gsl", res);
-            this.replicants.sceneList.value = res.scenes.map(scene => scene.name as string);
+            this.replicants.sceneList.value = res.scenes.map(s => s.sceneName as string);
 
-            const pre = res.currentPreviewSceneName;
-            this.replicants.previewScene.value = {
-                name: pre,
-                sources: res.scenes.find(s => s.name === pre) as unknown as ObsSource[]
-            }
-
-            const pro = res.currentProgramSceneName;
-            this.replicants.programScene.value = {
-                name: pro,
-                sources: res.scenes.find(s => s.name === pro) as unknown as ObsSource[]
-            }
-            return res;
-        }).catch(err => {
-            this.log.error('Error updating scenes:', err);
-        });
+            return Promise.all([
+                this._updateSceneItems(this.replicants.previewScene, res.currentPreviewSceneName),
+                this._updateSceneItems(this.replicants.programScene, res.currentProgramSceneName),
+            ])
+        }).catch(err => this.log.error('Error updating scenes:', err));
     }
 
     private _updateStudioMode() {
@@ -163,5 +153,16 @@ export class OBSUtility extends OBSWebSocket {
         }).catch(err => {
             this.log.error('Error getting studio mode status:', err);
         });
+    }
+
+    private _updateSceneItems(replicant: NodeCG.ServerReplicantWithSchemaDefault<PreviewScene>, sceneName: string) {
+        this.call("GetSceneItemList", { sceneName: sceneName }).then(items => {
+            replicant.value = {
+                name: sceneName,
+                sources: items.sceneItems as unknown as ObsSource[]
+            }
+            this.log.info(replicant.name, replicant.value);
+            return items;
+        }).catch(err => this.log.error(`Error updating ${replicant.name} scene:`, err));
     }
 }
