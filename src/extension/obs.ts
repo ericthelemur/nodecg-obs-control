@@ -67,10 +67,6 @@ export class OBSUtility extends OBSWebSocket {
         const studioMode = NamespaceReplicant<StudioMode>(namespace, "studioMode");
         const log = new nodecg.Logger(prefixName(nodecg.bundleName, namespace));
 
-        // Expose convenient references to the Replicants.
-        // This isn't strictly necessary. The same effect could be achieved by just
-        // declaring the same Replicant again, but some folks might like
-        // to just work with the references that we return here.
         this.replicants = {
             websocket: websocketConfig,
             programScene,
@@ -82,12 +78,19 @@ export class OBSUtility extends OBSWebSocket {
         this.log = log;
         this.hooks = opts.hooks || {};
 
-        websocketConfig.once('change', newVal => {
+        this.connectionListeners();
+        this._replicantListeners();
+        this._transitionListeners();
+    }
+
+
+    private connectionListeners() {
+        this.replicants.websocket.once('change', newVal => {
             // If we were connected last time, try connecting again now.
             if (newVal && (newVal.status === 'connected' || newVal.status === 'connecting')) {
-                websocketConfig.value.status = 'connecting';
+                this.replicants.websocket.value.status = 'connecting';
                 this._connectToOBS().then().catch(() => {
-                    websocketConfig.value.status = 'error';
+                    this.replicants.websocket.value.status = 'error';
                 });
             }
         });
@@ -97,39 +100,38 @@ export class OBSUtility extends OBSWebSocket {
             clearInterval(this._reconnectInterval!);
             this._reconnectInterval = null;
 
-            websocketConfig.value = { ...websocketConfig.value, ...params };
+            this.replicants.websocket.value = { ...this.replicants.websocket.value, ...params };
 
             this._connectToOBS().then(() => {
                 if (ack && !ack.handled) ack();
             }).catch(err => {
-                websocketConfig.value.status = 'error';
-                log.error('Failed to connect:', err);
+                this.replicants.websocket.value.status = 'error';
+                this.log.error('Failed to connect:', err);
 
                 if (ack && !ack.handled) ack(err);
             });
-        }, namespace);
+        }, this.namespace);
 
         listenTo("disconnect", (_, ack) => {
             this._ignoreConnectionClosedEvents = true;
             clearInterval(this._reconnectInterval!);
             this._reconnectInterval = null;
-            websocketConfig.value.status = 'disconnected';
+
+            this.replicants.websocket.value.status = 'disconnected';
             this.disconnect();
-            log.info('Operator-requested disconnect.');
+            this.log.info('Operator-requested disconnect.');
 
             if (ack && !ack.handled) ack();
-        }, namespace);
+        }, this.namespace);
 
         this.on("ConnectionClosed", this._reconnectToOBS);
+
         (this as any).on("error", (e: Error) => {
-            log.error(e);
+            this.log.error(e);
             this._reconnectToOBS();
         });
-
-        this.on("SceneListChanged", this._updateScenes);
-        this.on("CurrentPreviewSceneChanged", (name) => this._updateSceneItems(this.replicants.previewScene, name.sceneName));
-        this.on("CurrentProgramSceneChanged", (name) => this._updateSceneItems(this.replicants.programScene, name.sceneName));
     }
+
 
     private _connectToOBS() {
         const websocketConfig = this.replicants.websocket;
@@ -149,6 +151,28 @@ export class OBSUtility extends OBSWebSocket {
         });
     }
 
+    private _reconnectToOBS() {
+        if (this._reconnectInterval) return;
+
+        const websocketConfig = this.replicants.websocket;
+        if (this._ignoreConnectionClosedEvents) {
+            websocketConfig.value.status = 'disconnected';
+            return;
+        }
+
+        websocketConfig.value.status = 'connecting';
+        this.log.warn('Connection closed, will attempt to reconnect every 5 seconds.');
+        // Retry, ignoring errors
+        this._reconnectInterval = setInterval(() => this._connectToOBS().catch(() => { }), 5000);
+    }
+
+
+    private _replicantListeners() {
+        this.on("SceneListChanged", (res) => this._updateSceneList(res.scenes as { sceneName: string }[]));
+        this.on("CurrentPreviewSceneChanged", (name) => this._updateSceneItems(this.replicants.previewScene, name.sceneName));
+        this.on("CurrentProgramSceneChanged", (name) => this._updateSceneItems(this.replicants.programScene, name.sceneName));
+    }
+
     private _fullUpdate() {
         return Promise.all([
             this._updateScenes().then(
@@ -163,18 +187,21 @@ export class OBSUtility extends OBSWebSocket {
 
     private _updateScenes() {
         return this.call('GetSceneList').then(res => {
-            this.log.info("Calling gsl", res);
-            this.replicants.sceneList.value = res.scenes.map(s => s.sceneName as string);
+            // Response type is not detailed enough, so assert type here
+            this._updateSceneList(res.scenes as { sceneName: string }[]);
             return res;
         })
+    }
+
+    private _updateSceneList(scenes: { sceneName: string }[]) {
+        this.replicants.sceneList.value = scenes.map(s => s.sceneName);
+        return scenes;
     }
 
     private _updateStudioMode() {
         return this.call('GetStudioModeEnabled').then(res => {
             this.replicants.studioMode.value = res.studioModeEnabled;
-        }).catch(err => {
-            this.log.error('Error getting studio mode status:', err);
-        });
+        }).catch(err => this.log.error('Error getting studio mode status:', err));
     }
 
     private _updateSceneItems(replicant: NodeCG.ServerReplicantWithSchemaDefault<PreviewScene>, sceneName: string) {
@@ -189,19 +216,5 @@ export class OBSUtility extends OBSWebSocket {
     }
 
 
-    private _reconnectToOBS() {
-        if (this._reconnectInterval) return;
-
-        const websocketConfig = this.replicants.websocket;
-        if (this._ignoreConnectionClosedEvents) {
-            websocketConfig.value.status = 'disconnected';
-            return;
-        }
-
-        websocketConfig.value.status = 'connecting';
-        this.log.warn('Connection closed, will attempt to reconnect every 5 seconds.');
-        this._reconnectInterval = setInterval(() => {
-            this._connectToOBS().catch(() => { });
-        }, 5000);
-    }
+    private _transitionListeners() { }
 }
