@@ -1,7 +1,7 @@
 {
 	"$schema": "http://json-schema.org/draft-04/schema#",
 	"definitions": {
-		"Status": {
+		"status": {
 			"type": "string",
 			"enum": [
 				"connected",
@@ -25,7 +25,7 @@
 			"default": ""
 		},
 		"status": {
-			"$ref": "#/definitions/Status"
+			"$ref": "#/definitions/status"
 		}
 	},
 	"required": [

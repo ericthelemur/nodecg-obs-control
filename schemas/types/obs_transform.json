@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "positionX": {
+      "type": "number"
+    },
+    "positionY": {
+      "type": "number"
+    },
+    "width": {
+      "type": "integer"
+    },
+    "height": {
+      "type": "integer"
+    },
+    "sourceHeight": {
+      "type": "integer"
+    },
+    "sourceWidth": {
+      "type": "integer"
+    },
+    "rotation": {
+      "type": "number"
+    },
+    "scaleX": {
+      "type": "number"
+    },
+    "scaleY": {
+      "type": "number"
+    },
+    "alignment": {
+      "type": "integer"
+    },
+    "boundsType": {
+      "type": "string",
+      "enum": [
+        "OBS_BOUNDS_NONE",
+        "OBS_BOUNDS_STRETCH",
+        "OBS_BOUNDS_SCALE_INNER",
+        "OBS_BOUNDS_SCALE_OUTER",
+        "OBS_BOUNDS_SCALE_TO_WIDTH",
+        "OBS_BOUNDS_SCALE_TO_HEIGHT",
+        "OBS_BOUNDS_MAX_ONLY"
+      ]
+    },
+    "boundsAlignment": {
+      "type": "integer"
+    },
+    "boundsWidth": {
+      "type": "number"
+    },
+    "boundsHeight": {
+      "type": "number"
+    },
+    "cropLeft": {
+      "type": "integer"
+    },
+    "cropRight": {
+      "type": "integer"
+    },
+    "cropTop": {
+      "type": "integer"
+    },
+    "cropBottom": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "alignment",
+    "boundsAlignment",
+    "boundsHeight",
+    "boundsType",
+    "boundsWidth",
+    "cropBottom",
+    "cropLeft",
+    "cropRight",
+    "cropTop",
+    "height",
+    "positionX",
+    "positionY",
+    "rotation",
+    "scaleX",
+    "scaleY",
+    "sourceHeight",
+    "sourceWidth",
+    "width"
+  ]
+}
