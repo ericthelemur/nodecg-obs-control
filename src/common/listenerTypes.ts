@@ -3,5 +3,15 @@ export type ListenerTypes = {
         ip: string,
         password: string
     },
-    disconnect: {}
+    disconnect: {},
+    transition: {
+        sceneName?: string;
+        transitionName?: string;
+        transitionDuration?: number;
+    },
+    transitioning: {
+        transitionName: string;
+        fromScene?: string;
+        toScene?: string;
+    }
 }

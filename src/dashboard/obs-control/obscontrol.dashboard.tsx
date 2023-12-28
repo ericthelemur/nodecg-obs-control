@@ -10,13 +10,15 @@ import FloatingLabel from 'react-bootstrap/FloatingLabel';
 import { useReplicant } from "use-nodecg";
 import { Websocket } from "../../types/schemas/websocket";
 import { sendTo } from "../../common/listeners";
-import { PreviewScene, ProgramScene, SceneList } from 'types/schemas';
+import { PreviewScene, ProgramScene, SceneList, StudioMode, Transitioning } from 'types/schemas';
 
 export function MsgControlPanel() {
 	const [websocketRep,] = useReplicant<Websocket>("websocket", { ip: "ws://localhost:4455", password: "", status: "disconnected" });
 	const [sceneListRep,] = useReplicant<SceneList>("sceneList", []);
 	const [previewSceneRep,] = useReplicant<PreviewScene>("previewScene", null);
 	const [programSceneRep,] = useReplicant<ProgramScene>("programScene", null);
+	const [transitioningRep,] = useReplicant<Transitioning>("transitioning", false);
+	const [studioModeRep,] = useReplicant<StudioMode>("studioMode", false);
 
 	const urlElem = useRef<HTMLInputElement>(null);
 	const pwElem = useRef<HTMLInputElement>(null);
@@ -45,6 +47,8 @@ export function MsgControlPanel() {
 			<Form.Text>{JSON.stringify(previewSceneRep?.name)}</Form.Text>
 			<Form.Text>{JSON.stringify(programSceneRep?.name)}</Form.Text>
 			<Form.Text>{JSON.stringify(programSceneRep?.sources)}</Form.Text>
+			<Form.Text>{JSON.stringify(transitioningRep)}</Form.Text>
+			<Form.Text>{JSON.stringify(studioModeRep)}</Form.Text>
 		</Form>
 	);
 }
