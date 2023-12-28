@@ -9,7 +9,7 @@ import { ListenerTypes } from "common/listenerTypes";
 
 
 function buildSchemaPath(schemaName: string) {
-    return path.resolve(__dirname, '../schemas', `${encodeURIComponent(schemaName)}.json`);
+    return path.resolve(__dirname, '../../schemas', `${encodeURIComponent(schemaName)}.json`);
 }
 
 export function NamespaceReplicant<T>(namespace: string | undefined, name: string, args: NodeCG.Replicant.OptionsNoDefault = {}) {
@@ -55,23 +55,15 @@ export class OBSUtility extends OBSWebSocket {
         const namespacesReplicant = Replicant<Namespaces>('namespaces', { persistent: false });
         namespacesReplicant.value.push(namespace);
 
-        const websocketConfig = NamespaceReplicant<Websocket>(namespace, "websocket");
-        const programScene = NamespaceReplicant<ProgramScene>(namespace, "programScene");
-        const previewScene = NamespaceReplicant<PreviewScene>(namespace, "previewScene");
-        const sceneList = NamespaceReplicant<SceneList>(namespace, "sceneList");
-        const transitioning = NamespaceReplicant<Transitioning>(namespace, "transitioning");
-        const studioMode = NamespaceReplicant<StudioMode>(namespace, "studioMode");
-        const log = new nodecg.Logger(prefixName(nodecg.bundleName, namespace));
-
         this.replicants = {
-            websocket: websocketConfig,
-            programScene,
-            previewScene,
-            sceneList,
-            transitioning,
-            studioMode
+            websocket: NamespaceReplicant<Websocket>(namespace, "websocket"),
+            programScene: NamespaceReplicant<ProgramScene>(namespace, "programScene"),
+            previewScene: NamespaceReplicant<PreviewScene>(namespace, "previewScene"),
+            sceneList: NamespaceReplicant<SceneList>(namespace, "sceneList"),
+            transitioning: NamespaceReplicant<Transitioning>(namespace, "transitioning"),
+            studioMode: NamespaceReplicant<StudioMode>(namespace, "studioMode"),
         };
-        this.log = log;
+        this.log = new nodecg.Logger(prefixName(nodecg.bundleName, namespace));;
         this.hooks = opts.hooks || {};
 
         this._connectionListeners();

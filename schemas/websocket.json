@@ -17,12 +17,10 @@
 	"additionalProperties": false,
 	"properties": {
 		"ip": {
-			"type": "string",
-			"default": "ws://localhost:4455"
+			"type": "string"
 		},
 		"password": {
-			"type": "string",
-			"default": ""
+			"type": "string"
 		},
 		"status": {
 			"$ref": "#/definitions/status"
@@ -32,5 +30,10 @@
 		"ip",
 		"password",
 		"status"
-	]
+	],
+	"default": {
+		"ip": "ws://localhost:4455",
+		"password": "",
+		"status": "disconnected"
+	}
 }

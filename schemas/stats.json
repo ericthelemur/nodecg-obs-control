@@ -1,0 +1,22 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"type": "object",
+	"description": "Status of OBS outputs",
+	"additionalProperties": false,
+	"properties": {
+		"streaming": {
+			"type": "boolean"
+		},
+		"recording": {
+			"type": "boolean"
+		}
+	},
+	"required": [
+		"streaming",
+		"recording"
+	],
+	"default": {
+		"streaming": false,
+		"recording": false
+	}
+}

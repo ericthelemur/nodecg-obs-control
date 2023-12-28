@@ -1,3 +1,5 @@
 {
-	"$ref": "types/obs_scene.json"
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"$ref": "types/obs_scene.json",
+	"default": null
 }
