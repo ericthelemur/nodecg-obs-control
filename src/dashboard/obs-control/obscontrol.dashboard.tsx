@@ -7,21 +7,45 @@ import Form from "react-bootstrap/Form";
 import InputGroup from "react-bootstrap/InputGroup";
 import Button from "react-bootstrap/Button";
 import FloatingLabel from 'react-bootstrap/FloatingLabel';
+import Badge from "react-bootstrap/Badge";
+import Stack from "react-bootstrap/Stack";
+import { RecordFill, Wifi } from "react-bootstrap-icons";
 import { useReplicant } from "use-nodecg";
 import { Status, Websocket } from "../../types/schemas/websocket";
 import { sendTo, sendToF } from "../../common/listeners";
 import { PreviewScene, ProgramScene, SceneList, StudioMode, Transitioning } from 'types/schemas';
 
 
-function Status({ status }: { status: Status }) {
+function ConnStatus({ status }: { status: Status }) {
 	switch (status) {
-		case "connected": return <span className="badge text-bg-success">Connected</span>
-		case "connecting": return <span className="badge text-bg-info">Connecting</span>
-		case "disconnected": return <span className="badge text-bg-danger">Disconnected</span>
-		case "error": return <span className="badge text-bg-danger">Error</span>
+		case "connected": return <Badge bg="success">Connected</Badge>
+		case "connecting": return <Badge bg="info">Connecting</Badge>
+		case "disconnected": return <Badge bg="danger">Disconnected</Badge>
+		case "error": return <Badge bg="danger">Error</Badge>
 	}
 }
 
+function Statuses() {
+	const [websocket,] = useReplicant<Websocket>("websocket", { ip: "ws://localhost:4455", password: "", status: "disconnected" });
+	const [previewScene,] = useReplicant<PreviewScene>("previewScene", null);
+	const [programScene,] = useReplicant<ProgramScene>("programScene", null);
+	const [transitioning,] = useReplicant<Transitioning>("transitioning", false);
+
+	return <div className="mt-3">
+		<Stack direction="horizontal" gap={1}>
+			Status:{" "}
+			<ConnStatus status={websocket?.status || "error"} />
+			{/* {props.live && <Badge bg="danger"><Wifi /> LIVE</Badge>}
+		{props.recording && <Badge bg="danger"><RecordFill /> Recording</Badge>} */}
+			{transitioning && <Badge bg="info">Transitioning</Badge>}
+		</Stack>
+		{websocket?.status === "connected" &&
+			<Stack direction="horizontal" gap={1}>
+				{previewScene && <>Preview: <Badge bg="secondary">{previewScene.name}</Badge></>}
+				{programScene && <>Program: <Badge bg="danger">{programScene.name}</Badge></>}
+			</Stack>}
+	</div>
+}
 
 function ConnectForm({ websocket }: { websocket: Websocket }) {
 	const urlElem = useRef<HTMLInputElement>(null);
@@ -46,7 +70,6 @@ function ConnectForm({ websocket }: { websocket: Websocket }) {
 			<FloatingLabel controlId="password" label="Password">
 				<Form.Control ref={pwElem} type="password" placeholder="Password" defaultValue={websocket?.password} />
 			</FloatingLabel>
-			<Form.Text>Status: <Status status={websocket?.status} /></Form.Text>
 			<Button type="submit">Connect</Button>
 		</Form>
 	)
@@ -66,7 +89,6 @@ function DisconnectForm({ websocket }: { websocket: Websocket }) {
 
 	return (
 		<Form onSubmit={disconnect} className="vstack gap-3 mt-2">
-			<Form.Text>Status: <Status status={websocket?.status} /></Form.Text>
 			<Button variant="outline-danger" type="submit">Disconnect</Button>
 		</Form>
 	)
@@ -98,7 +120,7 @@ function ScenesForm() {
 }
 
 
-export function MsgControlPanel() {
+function ControlForms() {
 	const [websocketRep,] = useReplicant<Websocket>("websocket", { ip: "ws://localhost:4455", password: "", status: "disconnected" });
 
 	if (websocketRep) {
@@ -111,6 +133,13 @@ export function MsgControlPanel() {
 			</>
 		}
 	}
+}
+
+export function MsgControlPanel() {
+	return <div className="m-3">
+		<ControlForms />
+		<Statuses />
+	</div>
 
 	/* <Form.Text>{JSON.stringify(sceneListRep)}</Form.Text>
 	<Form.Text>{JSON.stringify(previewSceneRep?.name)}</Form.Text>
@@ -121,4 +150,4 @@ export function MsgControlPanel() {
 }
 
 const root = createRoot(document.getElementById('root')!);
-root.render(<div className="m-3"><MsgControlPanel /></div>);
+root.render(<MsgControlPanel />);
