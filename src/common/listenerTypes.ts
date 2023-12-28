@@ -13,5 +13,8 @@ export type ListenerTypes = {
         transitionName: string;
         fromScene?: string;
         toScene?: string;
+    },
+    preview: {
+        sceneName: string;
     }
 }

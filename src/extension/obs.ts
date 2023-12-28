@@ -74,13 +74,13 @@ export class OBSUtility extends OBSWebSocket {
         this.log = log;
         this.hooks = opts.hooks || {};
 
-        this.connectionListeners();
+        this._connectionListeners();
         this._replicantListeners();
         this._transitionListeners();
     }
 
 
-    private connectionListeners() {
+    private _connectionListeners() {
         this.replicants.websocket.once('change', newVal => {
             // If we were connected last time, try connecting again now.
             if (newVal && (newVal.status === 'connected' || newVal.status === 'connecting')) {
@@ -270,7 +270,7 @@ export class OBSUtility extends OBSWebSocket {
             );
 
             // Trigger transition, needs different calls outside studio mode
-            if (this.replicants.studioMode) {
+            if (this.replicants.studioMode.value) {
                 if (args.sceneName) {
                     this._tryCallOBS('SetCurrentPreviewScene', { 'sceneName': args.sceneName },
                         ack, 'Error setting preview scene for transition:')
@@ -283,6 +283,13 @@ export class OBSUtility extends OBSWebSocket {
                 else this._tryCallOBS("SetCurrentProgramScene", { 'sceneName': args.sceneName }, ack, "Error transitioning",
                     (e) => this.replicants.transitioning.value = false);
             }
+        }, this.namespace);
+
+        listenTo("preview", async (args, ack) => {
+            if (!this.replicants.studioMode) this.ackError(ack, "Cannot preview when not in studio mode", undefined);
+
+            this._tryCallOBS('SetCurrentPreviewScene', { 'sceneName': args.sceneName },
+                ack, 'Error setting preview scene for transition:')
         }, this.namespace);
 
 

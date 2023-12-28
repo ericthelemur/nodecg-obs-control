@@ -9,7 +9,7 @@ import Button from "react-bootstrap/Button";
 import FloatingLabel from 'react-bootstrap/FloatingLabel';
 import { useReplicant } from "use-nodecg";
 import { Status, Websocket } from "../../types/schemas/websocket";
-import { sendTo } from "../../common/listeners";
+import { sendTo, sendToF } from "../../common/listeners";
 import { PreviewScene, ProgramScene, SceneList, StudioMode, Transitioning } from 'types/schemas';
 
 
@@ -39,7 +39,7 @@ function ConnectForm({ websocket }: { websocket: Websocket }) {
 	}
 
 	return (
-		<Form onSubmit={connect} className="m-3 vstack gap-3">
+		<Form onSubmit={connect} className="vstack gap-3">
 			<FloatingLabel className="flex-grow-1" controlId="url" label="OBS URL">
 				<Form.Control ref={urlElem} placeholder="ws://localhost:4455" defaultValue={websocket?.ip} />
 			</FloatingLabel>
@@ -65,26 +65,50 @@ function DisconnectForm({ websocket }: { websocket: Websocket }) {
 	}
 
 	return (
-		<Form onSubmit={disconnect} className="m-3 vstack gap-3">
+		<Form onSubmit={disconnect} className="vstack gap-3 mt-2">
 			<Form.Text>Status: <Status status={websocket?.status} /></Form.Text>
 			<Button variant="outline-danger" type="submit">Disconnect</Button>
 		</Form>
 	)
 }
 
+function SceneButton(props: { sceneName: string, studio: boolean, disabled?: boolean }) {
+	const args = { sceneName: props.sceneName }
+	return <Button variant={props.studio ? "outline-primary" : "primary"} disabled={props.disabled}
+		onClick={props.studio ? sendToF("preview", args) : sendToF("transition", args)}>
+		{props.sceneName}
+	</Button>
+}
 
-export function MsgControlPanel() {
-	const [websocketRep,] = useReplicant<Websocket>("websocket", { ip: "ws://localhost:4455", password: "", status: "disconnected" });
+function ScenesForm() {
 	const [sceneListRep,] = useReplicant<SceneList>("sceneList", []);
 	const [previewSceneRep,] = useReplicant<PreviewScene>("previewScene", null);
 	const [programSceneRep,] = useReplicant<ProgramScene>("programScene", null);
 	const [transitioningRep,] = useReplicant<Transitioning>("transitioning", false);
 	const [studioModeRep,] = useReplicant<StudioMode>("studioMode", false);
+
+	return <div className="vstack">
+		<h2>{studioModeRep ? "Preview" : "Transition"}</h2>
+		<div className="gap-2 mb-2 d-flex flex-wrap">
+			{sceneListRep?.map((s) => <SceneButton key={s} sceneName={s} studio={Boolean(studioModeRep)}
+				disabled={transitioningRep || (studioModeRep ? previewSceneRep : programSceneRep)?.name === s} />)}
+		</div>
+		{studioModeRep && <Button variant="primary" disabled={transitioningRep} onClick={sendToF("transition", {})}>Transition</Button>}
+	</div>
+}
+
+
+export function MsgControlPanel() {
+	const [websocketRep,] = useReplicant<Websocket>("websocket", { ip: "ws://localhost:4455", password: "", status: "disconnected" });
+
 	if (websocketRep) {
 		if (websocketRep.status !== "connected") {
 			return <ConnectForm websocket={websocketRep} />
 		} else {
-			return <DisconnectForm websocket={websocketRep} />
+			return <>
+				<ScenesForm />
+				<DisconnectForm websocket={websocketRep} />
+			</>
 		}
 	}
 
@@ -97,4 +121,4 @@ export function MsgControlPanel() {
 }
 
 const root = createRoot(document.getElementById('root')!);
-root.render(<MsgControlPanel />);
+root.render(<div className="m-3"><MsgControlPanel /></div>);
