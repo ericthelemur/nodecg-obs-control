@@ -91,6 +91,18 @@ export class OBSUtility extends OBSWebSocket {
             }
         });
 
+        this.nodecg.listenFor("DEBUG:callOBS", async (data, ack) => {
+            if (!data.name || !data.args) return;
+            this.log.info("Called", data.name, "with", data.args);
+            try {
+                const res = await this.call(data.name, data.args);
+                if (ack && !ack.handled) ack(undefined, res);
+                this.log.info("Result:", res);
+            } catch (err) {
+                this.ackError(ack, `Error calling ${data.name}`, err);
+            }
+        })
+
         listenTo("connect", (params, ack) => {
             this._ignoreConnectionClosedEvents = false;
             clearInterval(this._reconnectInterval!);
