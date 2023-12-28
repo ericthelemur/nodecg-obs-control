@@ -1,0 +1,49 @@
+{
+	"$schema": "http://json-schema.org/draft-04/schema#",
+	"definitions": {
+		"connStatus": {
+			"type": "string",
+			"enum": [
+				"connected",
+				"connecting",
+				"disconnected",
+				"error"
+			],
+			"default": "disconnected"
+		}
+	},
+	"type": "object",
+	"description": "Status of OBS outputs",
+	"additionalProperties": false,
+	"properties": {
+		"connection": {
+			"$ref": "#/definitions/connStatus"
+		},
+		"streaming": {
+			"type": "boolean"
+		},
+		"recording": {
+			"type": "boolean"
+		},
+		"transitioning": {
+			"type": "boolean"
+		},
+		"studioMode": {
+			"type": "boolean"
+		}
+	},
+	"required": [
+		"connection",
+		"streaming",
+		"recording",
+		"transitioning",
+		"studioMode"
+	],
+	"default": {
+		"connection": "disconnected",
+		"streaming": false,
+		"recording": false,
+		"transitioning": false,
+		"studioMode": false
+	}
+}

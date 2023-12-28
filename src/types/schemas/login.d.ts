@@ -5,13 +5,10 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type Status = 'connected' | 'connecting' | 'disconnected' | 'error';
-
 /**
  * Login information for OBS Websocket, used to communicate with and remotely control OBS Studio.
  */
-export interface Websocket {
+export interface Login {
 	ip: string;
 	password: string;
-	status: Status;
 }

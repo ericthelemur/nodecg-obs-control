@@ -1,17 +1,5 @@
 {
 	"$schema": "http://json-schema.org/draft-04/schema#",
-	"definitions": {
-		"status": {
-			"type": "string",
-			"enum": [
-				"connected",
-				"connecting",
-				"disconnected",
-				"error"
-			],
-			"default": "disconnected"
-		}
-	},
 	"type": "object",
 	"description": "Login information for OBS Websocket, used to communicate with and remotely control OBS Studio.",
 	"additionalProperties": false,
@@ -21,19 +9,14 @@
 		},
 		"password": {
 			"type": "string"
-		},
-		"status": {
-			"$ref": "#/definitions/status"
 		}
 	},
 	"required": [
 		"ip",
-		"password",
-		"status"
+		"password"
 	],
 	"default": {
 		"ip": "ws://localhost:4455",
-		"password": "",
-		"status": "disconnected"
+		"password": ""
 	}
 }

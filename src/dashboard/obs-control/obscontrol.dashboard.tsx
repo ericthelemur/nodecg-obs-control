@@ -12,34 +12,34 @@ import Stack from "react-bootstrap/Stack";
 import { RecordFill, Wifi } from "react-bootstrap-icons";
 import { useReplicant } from "use-nodecg";
 import { sendTo, sendToF } from "../../common/listeners";
-import { PreviewScene, ProgramScene, SceneList, Stats, StudioMode, Transitioning, Status, Websocket } from 'types/schemas';
+import { PreviewScene, ProgramScene, SceneList, ObsStatus, ConnStatus, Login } from 'types/schemas';
 
 
-function ConnStatus({ status }: { status: Status }) {
+function Status({ status }: { status?: ConnStatus }) {
 	switch (status) {
 		case "connected": return <Badge bg="success">Connected</Badge>
 		case "connecting": return <Badge bg="info">Connecting</Badge>
 		case "disconnected": return <Badge bg="danger">Disconnected</Badge>
 		case "error": return <Badge bg="danger">Error</Badge>
 	}
+	return undefined;
 }
 
 function Statuses() {
-	const [websocket,] = useReplicant<Websocket>("websocket", { ip: "ws://localhost:4455", password: "", status: "disconnected" });
+	const [login,] = useReplicant<Login>("login", { ip: "ws://localhost:4455", password: "" });
 	const [previewScene,] = useReplicant<PreviewScene>("previewScene", null);
 	const [programScene,] = useReplicant<ProgramScene>("programScene", null);
-	const [transitioning,] = useReplicant<Transitioning>("transitioning", false);
-	const [stats,] = useReplicant<Stats>("stats", { "streaming": false, "recording": false });
+	const [status,] = useReplicant<ObsStatus>("obsStatus", { "connection": "disconnected", "streaming": false, "recording": false, "studioMode": false, "transitioning": false });
 
 	return <div className="mt-3">
 		<Stack direction="horizontal" gap={1}>
-			Status:{" "}
-			<ConnStatus status={websocket?.status || "error"} />
-			{stats?.streaming && <Badge bg="danger"><Wifi /> LIVE</Badge>}
-			{stats?.recording && <Badge bg="danger"><RecordFill /> Recording</Badge>}
-			{transitioning && <Badge bg="info">Transitioning</Badge>}
+			Status:
+			<Status status={status?.connection} />
+			{status?.streaming && <Badge bg="danger"><Wifi /> LIVE</Badge>}
+			{status?.recording && <Badge bg="danger"><RecordFill /> Recording</Badge>}
+			{status?.transitioning && <Badge bg="info">Transitioning</Badge>}
 		</Stack>
-		{websocket?.status === "connected" &&
+		{status?.connection === "connected" &&
 			<Stack direction="horizontal" gap={1}>
 				{previewScene && <>Preview: <Badge bg="secondary">{previewScene.name}</Badge></>}
 				{programScene && <>Program: <Badge bg="danger">{programScene.name}</Badge></>}
@@ -47,7 +47,8 @@ function Statuses() {
 	</div>
 }
 
-function ConnectForm({ websocket }: { websocket: Websocket }) {
+function ConnectForm() {
+	const [login,] = useReplicant<Login>("login", { ip: "ws://localhost:4455", password: "" });
 	const urlElem = useRef<HTMLInputElement>(null);
 	const pwElem = useRef<HTMLInputElement>(null);
 
@@ -65,10 +66,10 @@ function ConnectForm({ websocket }: { websocket: Websocket }) {
 	return (
 		<Form onSubmit={connect} className="vstack gap-3">
 			<FloatingLabel className="flex-grow-1" controlId="url" label="OBS URL">
-				<Form.Control ref={urlElem} placeholder="ws://localhost:4455" defaultValue={websocket?.ip} />
+				<Form.Control ref={urlElem} placeholder="ws://localhost:4455" defaultValue={login?.ip} />
 			</FloatingLabel>
 			<FloatingLabel controlId="password" label="Password">
-				<Form.Control ref={pwElem} type="password" placeholder="Password" defaultValue={websocket?.password} />
+				<Form.Control ref={pwElem} type="password" placeholder="Password" defaultValue={login?.password} />
 			</FloatingLabel>
 			<Button type="submit">Connect</Button>
 		</Form>
@@ -76,7 +77,7 @@ function ConnectForm({ websocket }: { websocket: Websocket }) {
 }
 
 
-function DisconnectForm({ websocket }: { websocket: Websocket }) {
+function DisconnectForm() {
 	function disconnect(e: FormEvent) {
 		e.preventDefault();
 		if (confirm("Are you sure you want to disconnect from OBS?")) {
@@ -106,30 +107,28 @@ function ScenesForm() {
 	const [sceneListRep,] = useReplicant<SceneList>("sceneList", []);
 	const [previewSceneRep,] = useReplicant<PreviewScene>("previewScene", null);
 	const [programSceneRep,] = useReplicant<ProgramScene>("programScene", null);
-	const [transitioningRep,] = useReplicant<Transitioning>("transitioning", false);
-	const [studioModeRep,] = useReplicant<StudioMode>("studioMode", false);
+	const [status,] = useReplicant<ObsStatus>("obsStatus", { "connection": "disconnected", "streaming": false, "recording": false, "studioMode": false, "transitioning": false });
 
 	return <div className="vstack">
-		<h2>{studioModeRep ? "Preview" : "Transition"}</h2>
+		<h2>{status?.studioMode ? "Preview" : "Transition"}</h2>
 		<div className="gap-2 mb-2 d-flex flex-wrap">
-			{sceneListRep?.map((s) => <SceneButton key={s} sceneName={s} studio={Boolean(studioModeRep)}
-				disabled={transitioningRep || (studioModeRep ? previewSceneRep : programSceneRep)?.name === s} />)}
+			{sceneListRep?.map((s) => <SceneButton key={s} sceneName={s} studio={Boolean(status?.studioMode)}
+				disabled={status?.transitioning || (status?.studioMode ? previewSceneRep : programSceneRep)?.name === s} />)}
 		</div>
-		{studioModeRep && <Button variant="primary" disabled={transitioningRep} onClick={sendToF("transition", {})}>Transition</Button>}
+		{status?.studioMode && <Button variant="primary" disabled={status?.transitioning} onClick={sendToF("transition", {})}>Transition</Button>}
 	</div>
 }
 
 
 function ControlForms() {
-	const [websocketRep,] = useReplicant<Websocket>("websocket", { ip: "ws://localhost:4455", password: "", status: "disconnected" });
-
-	if (websocketRep) {
-		if (websocketRep.status !== "connected") {
-			return <ConnectForm websocket={websocketRep} />
+	const [status,] = useReplicant<ObsStatus>("obsStatus", { "connection": "disconnected", "streaming": false, "recording": false, "studioMode": false, "transitioning": false });
+	if (status) {
+		if (status.connection !== "connected") {
+			return <ConnectForm />
 		} else {
 			return <>
 				<ScenesForm />
-				<DisconnectForm websocket={websocketRep} />
+				<DisconnectForm />
 			</>
 		}
 	}
