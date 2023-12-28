@@ -186,7 +186,13 @@ export class OBSUtility extends OBSWebSocket {
         this.on("SceneListChanged", ({ scenes }) => this._updateSceneList(scenes as { sceneName: string }[]));
         this.on("CurrentPreviewSceneChanged", (name) => this._updateSceneItems(this.replicants.previewScene, name.sceneName));
         this.on("CurrentProgramSceneChanged", (name) => this._updateSceneItems(this.replicants.programScene, name.sceneName));
-        this.on("StudioModeStateChanged", ({ studioModeEnabled }) => this.replicants.studioMode.value = studioModeEnabled);
+        // Clear or set preview on studio mode set or unset
+        this.on("StudioModeStateChanged", ({ studioModeEnabled }) => {
+            this.replicants.studioMode.value = studioModeEnabled;
+            if (!studioModeEnabled) this.replicants.previewScene.value = null;
+            else this.call("GetCurrentPreviewScene")
+                .then(({ currentPreviewSceneName }) => this._updateSceneItems(this.replicants.previewScene, currentPreviewSceneName));
+        });
     }
 
     private _fullUpdate() {
@@ -226,7 +232,6 @@ export class OBSUtility extends OBSWebSocket {
                 name: sceneName,
                 sources: items.sceneItems as unknown as ObsSource[]
             }
-            this.log.info(replicant.name, replicant.value);
             return items;
         }).catch(err => this.log.error(`Error updating ${replicant.name} scene:`, err));
     }
