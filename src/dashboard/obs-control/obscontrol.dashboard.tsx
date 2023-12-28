@@ -11,9 +11,8 @@ import Badge from "react-bootstrap/Badge";
 import Stack from "react-bootstrap/Stack";
 import { RecordFill, Wifi } from "react-bootstrap-icons";
 import { useReplicant } from "use-nodecg";
-import { Status, Websocket } from "../../types/schemas/websocket";
 import { sendTo, sendToF } from "../../common/listeners";
-import { PreviewScene, ProgramScene, SceneList, StudioMode, Transitioning } from 'types/schemas';
+import { PreviewScene, ProgramScene, SceneList, Stats, StudioMode, Transitioning, Status, Websocket } from 'types/schemas';
 
 
 function ConnStatus({ status }: { status: Status }) {
@@ -30,13 +29,14 @@ function Statuses() {
 	const [previewScene,] = useReplicant<PreviewScene>("previewScene", null);
 	const [programScene,] = useReplicant<ProgramScene>("programScene", null);
 	const [transitioning,] = useReplicant<Transitioning>("transitioning", false);
+	const [stats,] = useReplicant<Stats>("stats", { "streaming": false, "recording": false });
 
 	return <div className="mt-3">
 		<Stack direction="horizontal" gap={1}>
 			Status:{" "}
 			<ConnStatus status={websocket?.status || "error"} />
-			{/* {props.live && <Badge bg="danger"><Wifi /> LIVE</Badge>}
-		{props.recording && <Badge bg="danger"><RecordFill /> Recording</Badge>} */}
+			{stats?.streaming && <Badge bg="danger"><Wifi /> LIVE</Badge>}
+			{stats?.recording && <Badge bg="danger"><RecordFill /> Recording</Badge>}
 			{transitioning && <Badge bg="info">Transitioning</Badge>}
 		</Stack>
 		{websocket?.status === "connected" &&

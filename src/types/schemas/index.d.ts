@@ -10,6 +10,8 @@ export * from './programScene';
 // @ts-ignore
 export * from './sceneList';
 // @ts-ignore
+export * from './stats';
+// @ts-ignore
 export * from './studioMode';
 // @ts-ignore
 export * from './transitioning';

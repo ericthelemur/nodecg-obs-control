@@ -1,4 +1,4 @@
-import { Configschema, PreviewScene, ProgramScene, SceneList, StudioMode, Transitioning, Websocket, Namespaces, ObsSource } from "types/schemas";
+import { Configschema, PreviewScene, ProgramScene, SceneList, StudioMode, Transitioning, Websocket, Namespaces, ObsSource, Stats } from "types/schemas";
 import { Replicant, prefixName } from "./utils";
 import OBSWebSocket, { OBSRequestTypes } from 'obs-websocket-js';
 import NodeCG from "@nodecg/types";
@@ -35,6 +35,7 @@ export class OBSUtility extends OBSWebSocket {
         sceneList: NodeCG.ServerReplicantWithSchemaDefault<SceneList>;
         transitioning: NodeCG.ServerReplicantWithSchemaDefault<Transitioning>;
         studioMode: NodeCG.ServerReplicantWithSchemaDefault<StudioMode>;
+        stats: NodeCG.ServerReplicantWithSchemaDefault<Stats>;
     };
     log: NodeCG.Logger;
 
@@ -62,6 +63,7 @@ export class OBSUtility extends OBSWebSocket {
             sceneList: NamespaceReplicant<SceneList>(namespace, "sceneList"),
             transitioning: NamespaceReplicant<Transitioning>(namespace, "transitioning"),
             studioMode: NamespaceReplicant<StudioMode>(namespace, "studioMode"),
+            stats: NamespaceReplicant<Stats>(namespace, "stats")
         };
         this.log = new nodecg.Logger(prefixName(nodecg.bundleName, namespace));;
         this.hooks = opts.hooks || {};
@@ -185,6 +187,9 @@ export class OBSUtility extends OBSWebSocket {
             else this.call("GetCurrentPreviewScene")
                 .then(({ currentPreviewSceneName }) => this._updateSceneItems(this.replicants.previewScene, currentPreviewSceneName));
         });
+
+        this.on("RecordStateChanged", ({ outputActive }) => this.replicants.stats.value.recording = outputActive);
+        this.on("StreamStateChanged", ({ outputActive }) => this.replicants.stats.value.streaming = outputActive);
     }
 
     private _fullUpdate() {
@@ -195,7 +200,8 @@ export class OBSUtility extends OBSWebSocket {
                     this._updateSceneItems(this.replicants.programScene, res.currentProgramSceneName)
                 ])
             ).catch(err => this.log.error('Error updating scenes list:', err)),
-            this._updateStudioMode()
+            this._updateStudioMode(),
+            this._updateStats()
         ]);
     }
 
@@ -227,6 +233,12 @@ export class OBSUtility extends OBSWebSocket {
             return items;
         }).catch(err => this.log.error(`Error updating ${replicant.name} scene:`, err));
     }
+
+    private _updateStats() {
+        this.call("GetRecordStatus").then(({ outputActive }) => this.replicants.stats.value.recording = outputActive);
+        this.call("GetStreamStatus").then(({ outputActive }) => this.replicants.stats.value.streaming = outputActive);
+    }
+
 
     private async _tryCallOBS<Type extends keyof OBSRequestTypes>(requestType: Type, requestData?: OBSRequestTypes[Type], ack?: NodeCG.Acknowledgement, errMsg?: string, catchF?: (e: any) => {}) {
         try {
