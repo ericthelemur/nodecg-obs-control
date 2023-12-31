@@ -42,6 +42,7 @@
     ]
   },
   "scripts": {
+    "start": "cd ../.. && node -r source-map-support/register index.js",
     "build": "node scripts/build.mjs --all",
     "build:ci": "node scripts/build.mjs --ci",
     "build:extension": "node scripts/build.mjs --extension",
