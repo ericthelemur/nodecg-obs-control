@@ -3,6 +3,7 @@ import { Replicant, prefixName } from "./utils";
 import OBSWebSocket, { OBSRequestTypes } from 'obs-websocket-js';
 import NodeCG from "@nodecg/types";
 import * as path from "path";
+import getCurrentLine from 'get-current-line'
 
 import { listenTo, sendTo } from "../common/listeners";
 import { ListenerTypes } from "common/listenerTypes";
@@ -61,7 +62,7 @@ export class OBSUtility extends OBSWebSocket {
             sceneList: NamespaceReplicant<SceneList>(namespace, "sceneList", { persistent: false }),
             obsStatus: NamespaceReplicant<ObsStatus>(namespace, "obsStatus")
         };
-        this.log = new nodecg.Logger(prefixName(nodecg.bundleName, namespace));;
+        this.log = new nodecg.Logger(prefixName(nodecg.bundleName, namespace));
         this.hooks = opts.hooks || {};
 
         this._connectionListeners();
@@ -123,7 +124,7 @@ export class OBSUtility extends OBSWebSocket {
         this.on("ConnectionClosed", this._reconnectToOBS);
 
         (this as any).on("error", (e: Error) => {
-            this.log.error(e);
+            this.ackError(undefined, "", e);
             this._reconnectToOBS();
         });
 
@@ -196,7 +197,7 @@ export class OBSUtility extends OBSWebSocket {
                     this._updateSceneItems(this.replicants.previewScene, res.currentPreviewSceneName),
                     this._updateSceneItems(this.replicants.programScene, res.currentProgramSceneName)
                 ])
-            ).catch(err => this.log.error('Error updating scenes list:', err)),
+            ).catch(err => this.ackError(undefined, 'Error updating scenes list:', err)),
             this._updateStatus()
         ]);
     }
@@ -215,13 +216,16 @@ export class OBSUtility extends OBSWebSocket {
     }
 
     private _updateSceneItems(replicant: NodeCG.ServerReplicantWithSchemaDefault<PreviewScene>, sceneName: string) {
-        this.call("GetSceneItemList", { sceneName: sceneName }).then(items => {
-            replicant.value = {
-                name: sceneName,
-                sources: items.sceneItems as unknown as ObsSource[]
-            }
-            return items;
-        }).catch(err => this.log.error(`Error updating ${replicant.name} scene:`, err));
+        if (!sceneName) replicant.value = null;
+        else {
+            this.call("GetSceneItemList", { sceneName: sceneName }).then(items => {
+                replicant.value = {
+                    name: sceneName,
+                    sources: items.sceneItems as unknown as ObsSource[]
+                }
+                return items;
+            }).catch(err => this.ackError(undefined, `Error updating ${replicant.name} scene:`, err));
+        }
     }
 
     private _updateStatus() {
@@ -245,7 +249,8 @@ export class OBSUtility extends OBSWebSocket {
     }
 
     private ackError(ack: NodeCG.Acknowledgement | undefined, errmsg: string, err: any) {
-        this.log.error(errmsg, err);
+        const line = getCurrentLine({ frames: 2 });
+        this.log.error(`[${line.file}:${line.line}:${line.char}]`, errmsg, err);
         if (ack && !ack.handled) ack(err);
     }
 

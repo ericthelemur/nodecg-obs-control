@@ -57,6 +57,7 @@
   "dependencies": {
     "@types/clone": "^2.1.4",
     "clone": "^2.1.2",
+    "get-current-line": "^7.4.0",
     "obs-websocket-js": "^5.0.3",
     "react": "^18.0.0",
     "react-bootstrap": "^2.9.1",
