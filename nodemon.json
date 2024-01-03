@@ -1,6 +1,9 @@
 {
-	"watch": ["src/extension/*", "src/types/*"],
-	"exec": "npm run build:extension && node ../../index.js",
+	"watch": [
+		"src/extension/*",
+		"src/types/*"
+	],
+	"exec": "npm run build:extension && npm run start",
 	"ext": "js,ts,json,yaml",
 	"delay": 500,
 	"ignoreRoot": [
