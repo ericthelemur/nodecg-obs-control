@@ -68,6 +68,7 @@ export class OBSUtility extends OBSWebSocket {
         this._connectionListeners();
         this._replicantListeners();
         this._transitionListeners();
+        this._interactionListeners();
     }
 
 
@@ -83,7 +84,7 @@ export class OBSUtility extends OBSWebSocket {
         });
 
         this.nodecg.listenFor("DEBUG:callOBS", async (data, ack) => {
-            if (!data.name || !data.args) return;
+            if (!data.name || !data.args) return this.ackError(ack, "No name or args", undefined);
             this.log.info("Called", data.name, "with", data.args);
             try {
                 const res = await this.call(data.name, data.args);
@@ -317,6 +318,12 @@ export class OBSUtility extends OBSWebSocket {
             if (this.replicants.obsStatus.value.transitioning) {
                 this.replicants.obsStatus.value.transitioning = false;
             }
+        })
+    }
+
+    private _interactionListeners() {
+        listenTo("moveItem", ({ sceneName, sceneItemId, transform }) => {
+            this.call("SetSceneItemTransform", { sceneName: sceneName, sceneItemId: sceneItemId, sceneItemTransform: transform as any });
         })
     }
 }

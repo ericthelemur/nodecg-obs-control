@@ -1,3 +1,5 @@
+import type { ObsTransform } from 'types/schemas';
+
 export type ListenerTypes = {
     connect: {
         ip: string,
@@ -16,5 +18,10 @@ export type ListenerTypes = {
     },
     preview: {
         sceneName: string;
+    },
+    moveItem: {
+        sceneName: string;
+        sceneItemId: number;
+        transform: Partial<ObsTransform>
     }
 }
