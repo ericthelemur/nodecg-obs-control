@@ -214,6 +214,8 @@ var _utils = require("./utils");
 var _obsWebsocketJs = require("obs-websocket-js");
 var _obsWebsocketJsDefault = parcelHelpers.interopDefault(_obsWebsocketJs);
 var _path = require("path");
+var _getCurrentLine = require("get-current-line");
+var _getCurrentLineDefault = parcelHelpers.interopDefault(_getCurrentLine);
 var _listeners = require("../common/listeners");
 var $parcel$__dirname = require("a2f29e67e3d0030b").resolve(__dirname, "../src/extension");
 function buildSchemaPath(schemaName) {
@@ -237,7 +239,7 @@ class OBSUtility extends (0, _obsWebsocketJsDefault.default) {
             }
         });
         this.nodecg.listenFor("DEBUG:callOBS", async (data, ack)=>{
-            if (!data.name || !data.args) return;
+            if (!data.name || !data.args) return this.ackError(ack, "No name or args", undefined);
             this.log.info("Called", data.name, "with", data.args);
             try {
                 const res = await this.call(data.name, data.args);
@@ -270,7 +272,7 @@ class OBSUtility extends (0, _obsWebsocketJsDefault.default) {
         }, this.namespace);
         this.on("ConnectionClosed", this._reconnectToOBS);
         this.on("error", (e)=>{
-            this.log.error(e);
+            this.ackError(undefined, "", e);
             this._reconnectToOBS();
         });
         setInterval(()=>{
@@ -327,7 +329,7 @@ class OBSUtility extends (0, _obsWebsocketJsDefault.default) {
             this._updateScenes().then((res)=>Promise.all([
                     this._updateSceneItems(this.replicants.previewScene, res.currentPreviewSceneName),
                     this._updateSceneItems(this.replicants.programScene, res.currentProgramSceneName)
-                ])).catch((err)=>this.log.error("Error updating scenes list:", err)),
+                ])).catch((err)=>this.ackError(undefined, "Error updating scenes list:", err)),
             this._updateStatus()
         ]);
     }
@@ -343,7 +345,8 @@ class OBSUtility extends (0, _obsWebsocketJsDefault.default) {
         return scenes;
     }
     _updateSceneItems(replicant, sceneName) {
-        this.call("GetSceneItemList", {
+        if (!sceneName) replicant.value = null;
+        else this.call("GetSceneItemList", {
             sceneName: sceneName
         }).then((items)=>{
             replicant.value = {
@@ -351,7 +354,7 @@ class OBSUtility extends (0, _obsWebsocketJsDefault.default) {
                 sources: items.sceneItems
             };
             return items;
-        }).catch((err)=>this.log.error(`Error updating ${replicant.name} scene:`, err));
+        }).catch((err)=>this.ackError(undefined, `Error updating ${replicant.name} scene:`, err));
     }
     _updateStatus() {
         return Promise.all([
@@ -371,7 +374,10 @@ class OBSUtility extends (0, _obsWebsocketJsDefault.default) {
         });
     }
     ackError(ack, errmsg, err) {
-        this.log.error(errmsg, err);
+        const line = (0, _getCurrentLineDefault.default)({
+            frames: 2
+        });
+        this.log.error(`[${line.file}:${line.line}:${line.char}]`, errmsg, err);
         if (ack && !ack.handled) ack(err);
     }
     _transitionListeners() {
@@ -424,6 +430,15 @@ class OBSUtility extends (0, _obsWebsocketJsDefault.default) {
             if (this.replicants.obsStatus.value.transitioning) this.replicants.obsStatus.value.transitioning = false;
         });
     }
+    _interactionListeners() {
+        (0, _listeners.listenTo)("moveItem", ({ sceneName, sceneItemId, transform })=>{
+            this.call("SetSceneItemTransform", {
+                sceneName: sceneName,
+                sceneItemId: sceneItemId,
+                sceneItemTransform: transform
+            });
+        });
+    }
     constructor(nodecg, opts = {}){
         super();
         this._ignoreConnectionClosedEvents = false;
@@ -455,10 +470,11 @@ class OBSUtility extends (0, _obsWebsocketJsDefault.default) {
         this._connectionListeners();
         this._replicantListeners();
         this._transitionListeners();
+        this._interactionListeners();
     }
 }
 
-},{"@swc/helpers/_/_object_spread":"3fvE7","a2f29e67e3d0030b":"path","./utils":"8mEuU","obs-websocket-js":"obs-websocket-js","path":"path","../common/listeners":"ik2HY","@parcel/transformer-js/src/esmodule-helpers.js":"9VN6q"}],"3fvE7":[function(require,module,exports) {
+},{"@swc/helpers/_/_object_spread":"3fvE7","a2f29e67e3d0030b":"path","./utils":"8mEuU","obs-websocket-js":"obs-websocket-js","path":"path","get-current-line":"get-current-line","../common/listeners":"ik2HY","@parcel/transformer-js/src/esmodule-helpers.js":"9VN6q"}],"3fvE7":[function(require,module,exports) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
 parcelHelpers.export(exports, "_object_spread", ()=>_object_spread);
