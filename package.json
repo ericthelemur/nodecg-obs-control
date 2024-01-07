@@ -21,11 +21,11 @@
     ]
   },
   "scripts": {
-    "start": "cd ../.. && node -r source-map-support/register index.js",
+    "start": "cd .. && npm run start",
     "build": "cross-env-shell node ../wasd-common/shared/scripts/build.mjs $npm_package_name",
     "watch": "npm run build -- --watch",
     "clean": "npm run build -- --clean-only",
-    "types": "nodecg schema-types --o ../wasd-common/shared/types/$npm_package_name",
+    "types": "nodecg schema-types",
     "nodemon": "nodemon --config ../wasd-common/shared/nodemon.json",
     "dev": "concurrently --kill-others \"npm run watch -- --types\" \"npm run watch -- --browser\" \"npm run nodemon\""
   },

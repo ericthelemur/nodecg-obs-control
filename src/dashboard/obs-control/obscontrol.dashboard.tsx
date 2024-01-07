@@ -1,4 +1,3 @@
-import 'wasd-common/shared/uwcs-bootstrap.css';
 import './obscontrol.scss';
 
 import { sendTo, sendToF } from 'common/listeners';
@@ -11,9 +10,14 @@ import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import Stack from 'react-bootstrap/Stack';
 import { createRoot } from 'react-dom/client';
-import { ConnStatus, Login, ObsStatus, PreviewScene, ProgramScene, SceneList } from 'types/schemas';
+import {
+    Configschema, ConnStatus, Login, ObsStatus, PreviewScene, ProgramScene, SceneList
+} from 'types/schemas';
 import { useReplicant } from 'use-nodecg';
-import { nodecg } from 'wasd-common/shared/browser';
+
+import NodeCG from '@nodecg/types';
+
+declare const nodecg: NodeCG.ClientAPI<Configschema>;
 
 function Status({ status }: { status?: ConnStatus }) {
 	switch (status) {
