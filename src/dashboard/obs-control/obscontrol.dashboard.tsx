@@ -1,19 +1,19 @@
-import '../uwcs-bootstrap.css';
-import "./obscontrol.scss"
+import 'wasd-common/shared/uwcs-bootstrap.css';
+import './obscontrol.scss';
 
+import { sendTo, sendToF } from 'common/listeners';
 import { FormEvent, useRef } from 'react';
-import { createRoot } from 'react-dom/client';
-import Form from "react-bootstrap/Form";
-import InputGroup from "react-bootstrap/InputGroup";
-import Button from "react-bootstrap/Button";
+import { RecordFill, Wifi } from 'react-bootstrap-icons';
+import Badge from 'react-bootstrap/Badge';
+import Button from 'react-bootstrap/Button';
 import FloatingLabel from 'react-bootstrap/FloatingLabel';
-import Badge from "react-bootstrap/Badge";
-import Stack from "react-bootstrap/Stack";
-import { RecordFill, Wifi } from "react-bootstrap-icons";
-import { useReplicant } from "use-nodecg";
-import { sendTo, sendToF } from "../../common/listeners";
-import { PreviewScene, ProgramScene, SceneList, ObsStatus, ConnStatus, Login } from 'types/schemas';
-
+import Form from 'react-bootstrap/Form';
+import InputGroup from 'react-bootstrap/InputGroup';
+import Stack from 'react-bootstrap/Stack';
+import { createRoot } from 'react-dom/client';
+import { ConnStatus, Login, ObsStatus, PreviewScene, ProgramScene, SceneList } from 'types/schemas';
+import { useReplicant } from 'use-nodecg';
+import { nodecg } from 'wasd-common/shared/browser';
 
 function Status({ status }: { status?: ConnStatus }) {
 	switch (status) {
@@ -22,7 +22,7 @@ function Status({ status }: { status?: ConnStatus }) {
 		case "disconnected": return <Badge bg="danger">Disconnected</Badge>
 		case "error": return <Badge bg="danger">Error</Badge>
 	}
-	return undefined;
+	return null;
 }
 
 function Statuses() {
@@ -132,6 +132,7 @@ function ControlForms() {
 			</>
 		}
 	}
+	return null;
 }
 
 export function MsgControlPanel() {

@@ -8,15 +8,6 @@
     "email": "owenconnors1@gmail.com",
     "url": ""
   },
-  "files": [
-    "dashboard",
-    "extension.js",
-    "extension"
-  ],
-  "keywords": [
-    "",
-    "nodecg-bundle"
-  ],
   "nodecg": {
     "compatibleRange": "^2.0.0",
     "dashboardPanels": [
@@ -29,34 +20,16 @@
       }
     ]
   },
-  "browserslist": {
-    "production": [
-      ">0.5%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
   "scripts": {
     "start": "cd ../.. && node -r source-map-support/register index.js",
-    "build": "node scripts/build.mjs --all",
-    "build:ci": "node scripts/build.mjs --ci",
-    "build:extension": "node scripts/build.mjs --extension",
-    "build:graphics": "node scripts/build.mjs --graphics",
-    "build:dashboard": "node scripts/build.mjs --dashboard",
-    "build:schema": "trash src/types/schemas && nodecg schema-types",
-    "watch": "node scripts/build.mjs --all --watch",
-    "watch:browser": "node scripts/build.mjs --dashboard --graphics --watch",
-    "watch:schemas": "node scripts/build.mjs --schemas --watch",
-    "dev": "concurrently --kill-others \"npm run watch:schemas\" \"npm run watch:browser\" \"nodemon\"",
-    "clean": "trash .parcel-cache dashboard extension graphics"
+    "build": "cross-env-shell node ../wasd-common/shared/scripts/build.mjs $npm_package_name",
+    "watch": "npm run build -- --watch",
+    "clean": "npm run build -- --clean-only",
+    "types": "nodecg schema-types --o ../wasd-common/shared/types/$npm_package_name",
+    "nodemon": "nodemon --config ../wasd-common/shared/nodemon.json",
+    "dev": "concurrently --kill-others \"npm run watch -- --types\" \"npm run watch -- --browser\" \"npm run nodemon\""
   },
   "dependencies": {
-    "@types/clone": "^2.1.4",
     "clone": "^2.1.2",
     "get-current-line": "^7.4.0",
     "obs-websocket-js": "^5.0.3",
@@ -69,19 +42,14 @@
   },
   "devDependencies": {
     "@nodecg/types": "^2.0.0",
-    "@parcel/config-default": "*",
-    "@parcel/core": "*",
-    "@parcel/reporter-cli": "*",
-    "@parcel/transformer-sass": "^2.10.2",
-    "@parcel/validator-typescript": "*",
+    "@types/clone": "^2.1.4",
     "@types/node": "^18",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
     "concurrently": "*",
-    "glob": "^10.2.7",
     "nodemon": "*",
-    "trash-cli": "*",
-    "typescript": "^5.1.3"
+    "typescript": "^5.1.3",
+    "cross-env": "*"
   },
   "license": "MIT"
 }
