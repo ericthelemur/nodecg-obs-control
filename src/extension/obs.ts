@@ -1,13 +1,15 @@
-import { Configschema, PreviewScene, ProgramScene, SceneList, Namespaces, ObsSource, ObsStatus, Login } from "types/schemas";
-import { Replicant, prefixName } from "./utils";
+import { ListenerTypes } from 'common/listenerTypes';
+import getCurrentLine from 'get-current-line';
 import OBSWebSocket, { OBSRequestTypes } from 'obs-websocket-js';
-import NodeCG from "@nodecg/types";
-import * as path from "path";
-import getCurrentLine from 'get-current-line'
+import * as path from 'path';
+import {
+    Configschema, Login, Namespaces, ObsSource, ObsStatus, PreviewScene, ProgramScene, SceneList
+} from 'types/schemas';
 
-import { listenTo, sendTo } from "../common/listeners";
-import { ListenerTypes } from "common/listenerTypes";
+import NodeCG from '@nodecg/types';
 
+import { listenTo, sendTo } from '../common/listeners';
+import { prefixName, Replicant } from './utils';
 
 function buildSchemaPath(schemaName: string) {
     return path.resolve(__dirname, '../../schemas', `${encodeURIComponent(schemaName)}.json`);
@@ -299,18 +301,30 @@ export class OBSUtility extends OBSWebSocket {
                 ack, 'Error setting preview scene for transition:')
         }, this.namespace);
 
-
-        this.on("SceneTransitionStarted", ({ transitionName }) => {
-            const pre = this.replicants.previewScene.value;
-            const pro = this.replicants.programScene.value;
-
-            this.replicants.obsStatus.value.transitioning = true;
+        this.replicants.programScene.on("change", (newVal, oldVal) => {
             sendTo("transitioning", {
-                transitionName: transitionName,
-                fromScene: pro ? pro.name : undefined,
-                toScene: pre ? pre.name : undefined
+                transitionName: "",
+                fromScene: oldVal?.name,
+                toScene: newVal?.name
             })
         })
+
+        // this.on("SceneTransitionStarted", ({ transitionName }) => {
+        //     const pre = this.replicants.previewScene.value;
+        //     const pro = this.replicants.programScene.value;
+
+        //     const from = pro ? pro : null;
+        //     const to = pro ? pre : ;
+        //     console.log("Transitioning", from, to, transitionName);
+
+
+        //     this.replicants.obsStatus.value.transitioning = true;
+        //     sendTo("transitioning", {
+        //         transitionName: transitionName,
+        //         fromScene: from?.name,
+        //         toScene: to?.name
+        //     })
+        // })
 
         this.on("SceneTransitionEnded", () => this.replicants.obsStatus.value.transitioning = false);
         // SceneTransitionEnded doesn't trigger if user cancelled transition, so cya
