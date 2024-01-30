@@ -3,7 +3,8 @@ import getCurrentLine from 'get-current-line';
 import OBSWebSocket, { OBSRequestTypes } from 'obs-websocket-js';
 import * as path from 'path';
 import {
-    Configschema, Login, Namespaces, ObsSource, ObsStatus, PreviewScene, ProgramScene, SceneList
+    Configschema, Login, Namespaces, ObsScene, ObsSource, ObsStatus, PreviewScene, ProgramScene,
+    SceneList
 } from 'types/schemas';
 
 import NodeCG from '@nodecg/types';
@@ -214,7 +215,12 @@ export class OBSUtility extends OBSWebSocket {
     }
 
     private _updateSceneList(scenes: { sceneName: string }[]) {
-        this.replicants.sceneList.value = scenes.map(s => s.sceneName);
+        Promise.all(scenes.map(s =>
+            this.call("GetSceneItemList", { sceneName: s.sceneName })
+                .then((d) => ({ name: s.sceneName, sources: d.sceneItems } as unknown as ObsScene))
+        )).then(r =>
+            this.replicants.sceneList.value = r
+        ).catch((err) => this.ackError(undefined, "Error updating scene list", err));
         return scenes;
     }
 

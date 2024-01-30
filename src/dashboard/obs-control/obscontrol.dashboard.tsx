@@ -116,8 +116,8 @@ function ScenesForm() {
 	return <div className="vstack">
 		<h2>{status?.studioMode ? "Preview" : "Transition"}</h2>
 		<div className="gap-2 mb-2 d-flex flex-wrap">
-			{sceneListRep?.map((s) => <SceneButton key={s} sceneName={s} studio={Boolean(status?.studioMode)}
-				disabled={status?.transitioning || (status?.studioMode ? previewSceneRep : programSceneRep)?.name === s} />)}
+			{sceneListRep?.map((s) => <SceneButton key={s.name} sceneName={s.name} studio={Boolean(status?.studioMode)}
+				disabled={status?.transitioning || (status?.studioMode ? previewSceneRep : programSceneRep)?.name === s.name} />)}
 		</div>
 		{status?.studioMode && <Button variant="primary" disabled={status?.transitioning} onClick={sendToF("transition", {})}>Transition</Button>}
 	</div>

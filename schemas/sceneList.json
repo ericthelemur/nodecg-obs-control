@@ -3,6 +3,6 @@
 	"type": "array",
 	"default": [],
 	"items": {
-		"type": "string"
+		"$ref": "types/obs_scene.json"
 	}
 }

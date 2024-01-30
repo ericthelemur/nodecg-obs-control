@@ -5,11 +5,12 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type PreviewScene = null | {
+export type PreviewScene = null | ObsScene;
+
+export interface ObsScene {
 	name: string;
 	sources: ObsSource[];
-};
-
+}
 export interface ObsSource {
 	inputKind: null | string;
 	isGroup: boolean | null;
