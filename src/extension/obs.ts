@@ -342,8 +342,9 @@ export class OBSUtility extends OBSWebSocket {
     }
 
     private _interactionListeners() {
-        listenTo("moveItem", ({ sceneName, sceneItemId, transform }) => {
-            this.call("SetSceneItemTransform", { sceneName: sceneName, sceneItemId: sceneItemId, sceneItemTransform: transform as any });
+        listenTo("moveItem", ({ sceneName, sceneItemId, transform }, ack) => {
+            this.call("SetSceneItemTransform", { sceneName: sceneName, sceneItemId: sceneItemId, sceneItemTransform: transform as any })
+                .catch((err) => this.ackError(ack, "Error setting scene transform", err));
         })
     }
 }
