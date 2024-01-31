@@ -30,6 +30,9 @@
 		},
 		"studioMode": {
 			"type": "boolean"
+		},
+		"moveCams": {
+			"type": "boolean"
 		}
 	},
 	"required": [
@@ -37,13 +40,15 @@
 		"streaming",
 		"recording",
 		"transitioning",
-		"studioMode"
+		"studioMode",
+		"moveCams"
 	],
 	"default": {
 		"connection": "disconnected",
 		"streaming": false,
 		"recording": false,
 		"transitioning": false,
-		"studioMode": false
+		"studioMode": false,
+		"moveCams": true
 	}
 }

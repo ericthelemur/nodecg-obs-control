@@ -30,10 +30,9 @@ function Status({ status }: { status?: ConnStatus }) {
 }
 
 function Statuses() {
-	const [login,] = useReplicant<Login>("login", { ip: "ws://localhost:4455", password: "" });
 	const [previewScene,] = useReplicant<PreviewScene>("previewScene", null);
 	const [programScene,] = useReplicant<ProgramScene>("programScene", null);
-	const [status,] = useReplicant<ObsStatus>("obsStatus", { "connection": "disconnected", "streaming": false, "recording": false, "studioMode": false, "transitioning": false });
+	const [status,] = useReplicant<ObsStatus>("obsStatus", { "connection": "disconnected", "streaming": false, "recording": false, "studioMode": false, "transitioning": false, "moveCams": false });
 
 	return <div className="mt-3">
 		<Stack direction="horizontal" gap={1}>
@@ -111,10 +110,17 @@ function ScenesForm() {
 	const [sceneListRep,] = useReplicant<SceneList>("sceneList", []);
 	const [previewSceneRep,] = useReplicant<PreviewScene>("previewScene", null);
 	const [programSceneRep,] = useReplicant<ProgramScene>("programScene", null);
-	const [status,] = useReplicant<ObsStatus>("obsStatus", { "connection": "disconnected", "streaming": false, "recording": false, "studioMode": false, "transitioning": false });
+	const [status, setStatus] = useReplicant<ObsStatus>("obsStatus", { "connection": "disconnected", "streaming": false, "recording": false, "studioMode": false, "transitioning": false, "moveCams": false });
 
 	return <div className="vstack">
-		<h2>{status?.studioMode ? "Preview" : "Transition"}</h2>
+		<details className="mb-2 d-block">
+			<summary><span className="h6">Source Position Sync</span></summary>
+			{status && <Form.Check type="switch" className="d-inline-block ms-3" checked={status.moveCams}
+				label="Update OBS Sources with Overlay" onChange={(e) => setStatus({ ...status, moveCams: !status.moveCams })} />}
+			<Button className="d-inline mt-2" variant="outline-danger" onClick={() => nodecg.sendMessage("moveOBSSources")}>Force Update OBS Sources</Button>
+		</details>
+
+		<h4>{status?.studioMode ? "Preview" : "Transition"}</h4>
 		<div className="gap-2 mb-2 d-flex flex-wrap">
 			{sceneListRep?.map((s) => <SceneButton key={s.name} sceneName={s.name} studio={Boolean(status?.studioMode)}
 				disabled={status?.transitioning || (status?.studioMode ? previewSceneRep : programSceneRep)?.name === s.name} />)}
@@ -125,7 +131,7 @@ function ScenesForm() {
 
 
 function ControlForms() {
-	const [status,] = useReplicant<ObsStatus>("obsStatus", { "connection": "disconnected", "streaming": false, "recording": false, "studioMode": false, "transitioning": false });
+	const [status,] = useReplicant<ObsStatus>("obsStatus", { "connection": "disconnected", "streaming": false, "recording": false, "studioMode": false, "transitioning": false, "moveCams": false });
 	if (status) {
 		if (status.connection !== "connected") {
 			return <ConnectForm />

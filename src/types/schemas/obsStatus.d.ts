@@ -16,4 +16,5 @@ export interface ObsStatus {
 	recording: boolean;
 	transitioning: boolean;
 	studioMode: boolean;
+	moveCams: boolean;
 }
